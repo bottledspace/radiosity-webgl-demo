@@ -1,5 +1,5 @@
-#version 330 compatibility
-
+#version 300 es
+precision highp float;
      in vec2  f_uv;
 flat in int   f_patchid;
 

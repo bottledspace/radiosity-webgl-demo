@@ -1,5 +1,5 @@
-#version 330 compatibility
-
+#version 300 es
+precision highp float;
 out layout(location=0) vec3 accum;
 out layout(location=1) vec3 resid;
 

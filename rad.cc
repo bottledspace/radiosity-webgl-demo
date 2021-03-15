@@ -88,9 +88,11 @@ private:
 bool load_obj(VertexArray<glm::vec3> &vb, const char *fname)
 {
     std::ifstream is{fname};
-    if (!is)
-        return false;
-
+    if (!is) {
+    	std::cerr << "Cannot open " << fname << std::endl;
+	    return false;
+	}
+	
     std::string linebuf;
     std::vector<glm::vec3> verts;
     while (std::getline(is, linebuf)) {
@@ -167,20 +169,22 @@ public:
 
     template <typename T, int N>
     auto read() const {
+		bind();
         std::vector<T> pixels(m_width*m_height*N);
-        glGetTextureImage(m_texid, 0, m_format, gl_type<T>::value(),
-            sizeof(pixels[0])*pixels.size(), pixels.data());
+        glGetTexImage(GL_TEXTURE_2D, 0, m_format, gl_type<T>::value(), pixels.data());
         return pixels;
     }
 
     template <typename T, int N>
     void write(std::array<T, N> &&pixel, int x, int y) {
-        glTextureSubImage2D(m_texid, 0, x, y, 1, 1, m_format,
+		bind();
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, 1, 1, m_format,
             gl_type<T>::value(), pixel.data());
     }
 
     void gen_mipmaps() const {
-        glGenerateTextureMipmap(m_texid);
+		bind();
+        glGenerateMipmap(GL_TEXTURE_2D);
     } 
 
     void bind(int n = 0) const {
@@ -296,7 +300,7 @@ public:
     void uniform(const char *name, const glm::vec3 &vec)
         { glUniform3fv(glGetUniformLocation(m_prog, name),
             1, glm::value_ptr(vec)); }
-    template <int N>
+    template <size_t N>
     void uniform(const char *name, const std::array<glm::mat4,N> &mats)
         { glUniformMatrix4fv(glGetUniformLocation(m_prog, name),
             N, GL_FALSE, glm::value_ptr(mats[0])); }
@@ -352,35 +356,25 @@ private:
 };
 
 
-const auto proj = glm::perspective(M_PI/2.0f, 1.0f, 0.1f, 500.0f);
+const auto proj = glm::perspective(float(M_PI)/2.0f, 1.0f, 0.1f, 500.0f);
 const std::array<glm::mat4,5> views {
     proj,                                                         // forward
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {+1.0f,0.0f,0.0f}), // up
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {-1.0f,0.0f,0.0f}), // down
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {0.0f,-1.0f,0.0f}), // right
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {0.0f,+1.0f,0.0f}), // left
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {+1.0f,0.0f,0.0f}), // up
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {-1.0f,0.0f,0.0f}), // down
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,-1.0f,0.0f}), // right
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,+1.0f,0.0f}), // left
 };
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0]
-                  << " input_file" << std::endl;
-        return 1;
-    }
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "Failed to initialize SDL: "
                   << SDL_GetError() << std::endl;
         return 1;
     } 
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
     SDL_Window *window = SDL_CreateWindow("radiosity",
         100, 100, 512, 512, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
@@ -403,41 +397,41 @@ int main(int argc, char *argv[])
         std::cerr << "Error: Failed to initialize GLEW." << std::endl;
         return 1;
     }
+	
+	const char *filename = (argc >= 2)? argv[1] : "asset/sqube.obj";
 
     VertexArray<glm::vec3> vb;
-    if (!load_obj(vb, argv[1])) {
-        std::cerr << "Couldn't load mesh." << std::endl;
+    if (!load_obj(vb, filename))
         return 1;
-    }
     vb.resync();
 
     Framebuffer hcube{4096,2048,{ColorFormat::Red},ColorFormat::DepthStencil};
     Framebuffer findnext{1,1,{ColorFormat::Red},ColorFormat::DepthStencil};
     std::vector<Framebuffer> atlas, atlasb;
     Shader init_prog {
-        {ShaderType::Geometry, "init_geom.glsl"},
-        {ShaderType::Vertex,   "init_vert.glsl"},
-        {ShaderType::Fragment, "init_frag.glsl"}
+        {ShaderType::Geometry, "asset/init_geom.glsl"},
+        {ShaderType::Vertex,   "asset/init_vert.glsl"},
+        {ShaderType::Fragment, "asset/init_frag.glsl"}
     };
     Shader modelview_prog {
-        {ShaderType::Geometry, "modelview_geom.glsl"},
-        {ShaderType::Vertex,   "modelview_vert.glsl"},
-        {ShaderType::Fragment, "modelview_frag.glsl"}
+        {ShaderType::Geometry, "asset/modelview_geom.glsl"},
+        {ShaderType::Vertex,   "asset/modelview_vert.glsl"},
+        {ShaderType::Fragment, "asset/modelview_frag.glsl"}
     };
     Shader hcube_prog {
-        {ShaderType::Geometry, "hcube_geom.glsl"},
-        {ShaderType::Vertex,   "hcube_vert.glsl"},
-        {ShaderType::Fragment, "hcube_frag.glsl"}
+        {ShaderType::Geometry, "asset/hcube_geom.glsl"},
+        {ShaderType::Vertex,   "asset/hcube_vert.glsl"},
+        {ShaderType::Fragment, "asset/hcube_frag.glsl"}
     };
     Shader splat_prog {
-        {ShaderType::Geometry, "splat_geom.glsl"},
-        {ShaderType::Vertex,   "splat_vert.glsl"},
-        {ShaderType::Fragment, "splat_frag.glsl"}
+        {ShaderType::Geometry, "asset/splat_geom.glsl"},
+        {ShaderType::Vertex,   "asset/splat_vert.glsl"},
+        {ShaderType::Fragment, "asset/splat_frag.glsl"}
     };
     Shader findnext_prog {
-        {ShaderType::Geometry, "findnext_geom.glsl"},
-        {ShaderType::Vertex,   "findnext_vert.glsl"},
-        {ShaderType::Fragment, "findnext_frag.glsl"}
+        {ShaderType::Geometry, "asset/findnext_geom.glsl"},
+        {ShaderType::Vertex,   "asset/findnext_vert.glsl"},
+        {ShaderType::Fragment, "asset/findnext_frag.glsl"}
     };
 
 
@@ -484,7 +478,7 @@ int main(int argc, char *argv[])
 
 
         // === Setup frame of reference ===
-
+{
         const glm::vec3 a = vb.at(id*4),   b = vb.at(id*4+1);
         const glm::vec3 d = vb.at(id*4+2), c = vb.at(id*4+3);
         const float u = 0.5f, v = 0.5f;
@@ -531,12 +525,12 @@ int main(int argc, char *argv[])
             vb.draw(PrimitiveType::LinesAdj, i*4,
                 std::min<int>(4*64*64, vb.size()-4*i));
         }
-
+}
         // === Draw the scene ===
 Converged:
         static float angle = 0.0f;
         const auto mvp =
-            glm::perspective(M_PI/2.0f, 1.0f, 0.5f, 500.0f)
+            glm::perspective(float(M_PI)/2.0f, 1.0f, 0.5f, 500.0f)
           * glm::translate(glm::mat4{1.0f}, {0,0,-7})
           * glm::rotate(glm::mat4{1.0f}, angle += 0.005f, {0,1,0});
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

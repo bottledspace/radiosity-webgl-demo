@@ -1,5 +1,5 @@
-#version 330 compatibility
-
+#version 300 es
+precision highp float;
 layout (lines_adjacency) in;
 layout (triangle_strip, max_vertices=5) out;
 flat out int f_patchid;

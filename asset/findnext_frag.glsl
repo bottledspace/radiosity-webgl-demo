@@ -1,5 +1,5 @@
-#version 330 compatibility
-
+#version 300 es
+precision highp float;
 layout(location=0) out int res_id;
 
 flat in int   f_patchid;
