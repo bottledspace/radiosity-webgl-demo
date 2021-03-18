@@ -20,35 +20,33 @@
 #include "Texture.hpp"
 #include "Framebuffer.hpp"
 #include "Shader.hpp"
-#include "RenderDoc.hpp"
 
 #ifndef M_PI
 const float M_PI = 3.14159f;
 #endif
 
 
-const auto proj = glm::perspective(M_PI/2.0f, 1.0f, 0.1f, 500.0f);
+const auto proj = glm::perspective(float(M_PI)/2.0f, 1.0f, 0.1f, 500.0f);
 const std::array<glm::mat4,5> views {
     proj,                                                         // forward
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {+1.0f,0.0f,0.0f}), // up
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {-1.0f,0.0f,0.0f}), // down
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {0.0f,-1.0f,0.0f}), // right
-    proj*glm::rotate(glm::mat4{1}, M_PI/2.0f, {0.0f,+1.0f,0.0f}), // left
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {+1.0f,0.0f,0.0f}), // up
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {-1.0f,0.0f,0.0f}), // down
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,-1.0f,0.0f}), // right
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,+1.0f,0.0f}), // left
 };
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0]
-                  << " input_file" << std::endl;
-        return 1;
-    }
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "Failed to initialize SDL: "
                   << SDL_GetError() << std::endl;
         return 1;
-    } 
+    }
+#if __EMSCRIPTEN__
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#else
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -56,6 +54,7 @@ int main(int argc, char *argv[])
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+#endif
 
     SDL_Window *window = SDL_CreateWindow("radiosity",
         100, 100, 512, 512, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
@@ -80,32 +79,33 @@ int main(int argc, char *argv[])
     }
 
     QuadMesh mesh;
-    if (!load_obj(mesh, argv[1])) {
+	const char *meshname = (argc > 2)? argv[1] : "asset/sqube.obj";
+    if (!load_obj(mesh, meshname)) {
         std::cerr << "Couldn't load mesh." << std::endl;
         return 1;
     }
     auto compiled_mesh = mesh.compile();
 
     Shader modelview_prog {
-        {ShaderType::Vertex,   "modelview_vert.glsl"},
-        {ShaderType::Fragment, "modelview_frag.glsl"}
+        {ShaderType::Vertex,   "asset/modelview_vert.glsl"},
+        {ShaderType::Fragment, "asset/modelview_frag.glsl"}
     };
     Shader hcube_prog {
-        {ShaderType::Vertex,   "hcube_vert.glsl"},
-        {ShaderType::Fragment, "hcube_frag.glsl"}
+        {ShaderType::Vertex,   "asset/hcube_vert.glsl"},
+        {ShaderType::Fragment, "asset/hcube_frag.glsl"}
     };
     Shader splat_prog {
-        {ShaderType::Vertex,   "splat_vert.glsl"},
-        {ShaderType::Fragment, "splat_frag.glsl"}
+        {ShaderType::Vertex,   "asset/splat_vert.glsl"},
+        {ShaderType::Fragment, "asset/splat_frag.glsl"}
     };
     Shader findnext_prog {
-        {ShaderType::Vertex,   "findnext_vert.glsl"},
-        {ShaderType::Fragment, "findnext_frag.glsl"}
+        {ShaderType::Vertex,   "asset/findnext_vert.glsl"},
+        {ShaderType::Fragment, "asset/findnext_frag.glsl"}
     };
 
     Framebuffer hcube{4096,2048,{ColorFormat::Red},ColorFormat::DepthStencil};
     hcube.compile();
-    Framebuffer findnext{1,1,{ColorFormat::Red},ColorFormat::DepthStencil};
+    Framebuffer findnext{1,1,{ColorFormat::RedBlueGreen},ColorFormat::DepthStencil};
     findnext.compile();
     std::vector<Framebuffer> atlas, atlasb;
     for (int i = 0; i < compiled_mesh.count/6; i += 64*64) {
@@ -141,14 +141,18 @@ int main(int argc, char *argv[])
             findnext_prog.uniform("resid", atlasb[i].color(1));
             compiled_mesh.draw(i*6*64*64, 6*64*64);
         }
-        id = findnext.color().read<int,1>()[0]-1;
+{       float color[4];
+        glReadPixels(0,0,1,1,GL_RGBA,GL_FLOAT, &color);
+
+        id = color[0]-1;
         std::cout << id << std::endl;
+        energy = 1.0/color[1]-1.0f;
+        std::cout << id << "," << energy << std::endl;
         if (id < 0) {
             goto Converged;
         }
-        energy = 1.0/(findnext.depth().read<float,1>()[0])-1.0f;
-        std::cout << id << "," << energy << std::endl;
-
+}
+{
         // === Setup frame of reference ===
 
         const glm::vec3 a = mesh.vert(id*4).loc,   b = mesh.vert(id*4+1).loc;
@@ -194,12 +198,13 @@ int main(int argc, char *argv[])
             atlas[i].bind();
             compiled_mesh.draw(i*6*64*64, 6*64*64);
         }
-
-        // === Draw the scene ===
+}
 Converged:
+        // === Draw the scene ===
+
         static float angle = 0.0f;
         const auto mvp =
-            glm::perspective(M_PI/2.0f, 1.0f, 0.5f, 500.0f)
+            glm::perspective(float(M_PI)/2.0f, 1.0f, 0.5f, 500.0f)
           * glm::translate(glm::mat4{1.0f}, {0,0,-7})
           * glm::rotate(glm::mat4{1.0f}, angle += 0.005f, {0,1,0});
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

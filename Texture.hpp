@@ -45,19 +45,22 @@ public:
     template <typename T, int N>
     auto read() const {
         std::vector<T> pixels(m_width*m_height*N);
-        glGetTextureImage(m_texid, 0, m_format, gl_type<T>::value(),
-            sizeof(pixels[0])*pixels.size(), pixels.data());
+		glBindTexture(GL_TEXTURE_2D, m_texid);
+        glGetnTexImage(GL_TEXTURE_2D, 0, m_format, gl_type<T>::value(),
+			 pixels.size()*sizeof(pixels[0]), pixels.data());
         return pixels;
     }
 
     template <typename T, int N>
     void write(std::array<T, N> &&pixel, int x, int y) {
-        glTextureSubImage2D(m_texid, 0, x, y, 1, 1, m_format,
+		glBindTexture(GL_TEXTURE_2D, m_texid);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, 1, 1, m_format,
             gl_type<T>::value(), pixel.data());
     }
 
     void gen_mipmaps() const {
-        glGenerateTextureMipmap(m_texid);
+		glBindTexture(GL_TEXTURE_2D, m_texid);
+        glGenerateMipmap(GL_TEXTURE_2D);
     } 
 
     void bind(int n = 0) const {

@@ -50,7 +50,7 @@ public:
     void uniform(const char *name, const glm::vec3 &vec)
         { glUniform3fv(glGetUniformLocation(m_prog, name),
             1, glm::value_ptr(vec)); }
-    template <int N>
+    template <size_t N>
     void uniform(const char *name, const std::array<glm::mat4,N> &mats)
         { glUniformMatrix4fv(glGetUniformLocation(m_prog, name),
             N, GL_FALSE, glm::value_ptr(mats[0])); }
@@ -64,18 +64,21 @@ private:
     GLuint compile_shader(ShaderType type, const char *filename) {
         GLuint sh = glCreateShader(static_cast<GLenum>(type));
 
-        std::ifstream fs{filename};
+        std::ifstream fs{filename, std::ios_base::binary};
         if (!fs) {
             std::cerr << "Error: Cannot open " << filename << std::endl;
             exit(1);
         }
-        fs.seekg(0, std::ios_base::end);
-        long length = fs.tellg();
-        fs.seekg(0, std::ios_base::beg);
 
         // Read in file to buffer
-        std::vector<char> buffer(length);
-        fs.read(buffer.data(), buffer.size());
+        std::vector<char> buffer;
+		for (;;) {
+			int c = fs.get();
+			if (c == EOF || fs.eof())
+				break;
+			buffer.push_back((char)c);
+		}
+		buffer.push_back(0);
         
         // Compile shader
         const char *p = buffer.data();

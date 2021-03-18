@@ -1,10 +1,17 @@
 #version 300 es
 precision highp float;
-layout (location = 0) in vec4 pos_in;
+
+layout (location = 0) in vec4 loc_in;
+layout (location = 1) in vec2 uv_in;
+layout (location = 2) in int id_in;
+
+out vec2 uv;
 
 uniform mat4 mvp;
 
 
 void main() {
-    gl_Position = mvp * pos_in;
+    int k = id_in%(64*64);
+    gl_Position = mvp * loc_in;
+    uv = (uv_in + vec2(k%64, k/64))*16.0;
 }
