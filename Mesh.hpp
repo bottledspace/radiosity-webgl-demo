@@ -12,7 +12,6 @@ public:
         void draw(int ofs, int count) const {
             if (ofs+count > this->count)
                 count = this->count-ofs;
-            std::cout << "drawing compiled mesh " << vao << std::endl;
             glBindVertexArray(vao);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
             glEnableVertexAttribArray(0);
@@ -55,8 +54,6 @@ public:
             m_indices.size()*sizeof(unsigned),
             m_indices.data(), GL_STATIC_DRAW);
         glBindVertexArray(0);
-        std::cout << "compiled mesh with " << next.count
-            << " indices to " << next.vao << std::endl;
         return next;
     }
 

@@ -13,10 +13,12 @@ template <> struct gl_type<int> { static GLenum value() { return GL_INT; } };
 
 class Texture {
 public:
-    Texture(int width, int height, ColorFormat format)
-    : m_width{width}, m_height{height}  {
-        glGenTextures(1, &m_texid);
-        glBindTexture(GL_TEXTURE_2D, m_texid);
+    static Texture create(int width, int height, ColorFormat format) {
+		Texture res;
+		res.m_width = width;
+		res.m_height = height;
+        glGenTextures(1, &res.m_texid);
+        glBindTexture(GL_TEXTURE_2D, res.m_texid);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -27,19 +29,20 @@ public:
         case ColorFormat::Red:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, width, height,
                 0, GL_RED_INTEGER, GL_INT, 0);
-            m_format = GL_RED_INTEGER;
+            res.m_format = GL_RED_INTEGER;
             break;
         case ColorFormat::RedBlueGreen:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height,
                 0, GL_RGBA, GL_FLOAT, 0);
-            m_format = GL_RGBA;
+            res.m_format = GL_RGBA;
             break;
         case ColorFormat::DepthStencil:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
                 width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-            m_format = GL_DEPTH_COMPONENT;
+            res.m_format = GL_DEPTH_COMPONENT;
             break;
         }
+		return res;
     }
 
     template <typename T, int N>
@@ -66,7 +69,6 @@ public:
     void bind(int n = 0) const {
         glActiveTexture(GL_TEXTURE0 + n);
         glBindTexture(GL_TEXTURE_2D, m_texid);
-        std::cout << "binding " << m_texid << " to " << n << std::endl;
     }
 
     GLuint texid() const

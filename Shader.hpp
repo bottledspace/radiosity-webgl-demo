@@ -7,34 +7,36 @@ enum class ShaderType : GLenum {
 
 class Shader {
 public:
-    Shader(std::initializer_list<std::pair<ShaderType,const char *>> &&sources) {
-        m_prog = glCreateProgram();
+    static Shader compile(std::initializer_list<std::pair<ShaderType,const char *>> &&sources) {
+		Shader res;
+        res.m_prog = glCreateProgram();
 
         // Compile and link shaders
         std::vector<GLuint> ids;
         std::string temp;
         for (const auto &[type, filename] : sources) {
-            ids.push_back(compile_shader(type, filename));
+            ids.push_back(res.compile_shader(type, filename));
             temp = temp + filename + ", ";
         }
-        glLinkProgram(m_prog);
+        glLinkProgram(res.m_prog);
         for (auto id : ids)
             glDeleteShader(id);
 
         // Handle errors and warnings
         GLint loglen, stat;
-        glGetProgramiv(m_prog, GL_INFO_LOG_LENGTH, &loglen);
+        glGetProgramiv(res.m_prog, GL_INFO_LOG_LENGTH, &loglen);
         if (loglen > 0) {
             std::vector<char> buffer(loglen+1);
-            glGetProgramInfoLog(m_prog, loglen, NULL, buffer.data());
+            glGetProgramInfoLog(res.m_prog, loglen, NULL, buffer.data());
             std::cerr << buffer.data() << std::endl;
         }
-        glGetProgramiv(m_prog, GL_LINK_STATUS, &stat);
+        glGetProgramiv(res.m_prog, GL_LINK_STATUS, &stat);
         if (stat != GL_TRUE) {
             std::cerr << "Error: Failed to link " << temp
                 << "Exiting." << std::endl;
             exit(1);
         }
+		return res;
     }
  
     void use()

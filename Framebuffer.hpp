@@ -1,15 +1,19 @@
 
 class Framebuffer {
 public:
-    Framebuffer(int width, int height, std::initializer_list<ColorFormat> &&formats, ColorFormat depth = ColorFormat::None)
-    : m_width{width}, m_height{height}, m_depth{false} {
-        glGenFramebuffers(1, &m_fbo);
+    static Framebuffer create(int width, int height, std::initializer_list<ColorFormat> &&formats, ColorFormat depth = ColorFormat::None) {
+		Framebuffer res;
+		res.m_width = width;
+		res.m_height = height;
+		res.m_depth = false;
+        glGenFramebuffers(1, &res.m_fbo);
         for (auto format : formats)
-            m_channels.emplace_back(width, height, format);
+            res.m_channels.push_back(Texture::create(width, height, format));
         if (depth != ColorFormat::None) {
-            m_depth = true;
-            m_channels.emplace_back(width, height, depth);
+            res.m_depth = true;
+            res.m_channels.push_back(Texture::create(width, height, depth));
         }
+		return res;
     }
 
     void compile() {
@@ -37,7 +41,6 @@ public:
     void bind(int x, int y, int width, int height) const {
         glViewport(x, y, width, height);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-        std::cout << "binding framebuffer " << m_fbo << std::endl;
     }
     void bind() const { bind(0, 0, m_width, m_height); }
 
