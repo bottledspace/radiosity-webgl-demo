@@ -10,6 +10,7 @@ public:
     static Shader compile(std::initializer_list<std::pair<ShaderType,const char *>> &&sources) {
 		Shader res;
         res.m_prog = glCreateProgram();
+		res.m_color_slot = 0;
 
         // Compile and link shaders
         std::vector<GLuint> ids;
@@ -57,7 +58,7 @@ public:
         { glUniformMatrix4fv(glGetUniformLocation(m_prog, name),
             N, GL_FALSE, glm::value_ptr(mats[0])); }
     void uniform(const char *name, const Texture &texture) {
-        texture.bind(m_color_slot);
+		texture.bind(m_color_slot);
         glUniform1i(glGetUniformLocation(m_prog, name), m_color_slot);
         m_color_slot++;
     }
@@ -81,6 +82,8 @@ private:
 			buffer.push_back((char)c);
 		}
 		buffer.push_back(0);
+		//std::cerr << "=== "<< filename << " ===" << std::endl;
+		//std::cerr << buffer.data() << std::endl;
         
         // Compile shader
         const char *p = buffer.data();

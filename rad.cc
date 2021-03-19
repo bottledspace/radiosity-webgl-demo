@@ -1,11 +1,13 @@
 #if __EMSCRIPTEN__
 # include <emscripten.h>
 # include <emscripten/html5.h>
-#endif
+#include <GLES3/gl3.h>
+#else
 #include <GL/glew.h>
-#define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
 #define NO_SDL_GLEXT
+#define SDL_MAIN_HANDLED
+#endif
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -46,7 +48,7 @@ Shader hcube_prog;
 Framebuffer hcube;
 Framebuffer findnext;
 std::vector<Framebuffer> atlas, atlasb;
-int id = 0;
+float id = 0;
 float energy = 0.0;
 
 void iterate() {
@@ -60,18 +62,16 @@ void iterate() {
     findnext_prog.use();
     findnext.bind();
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0,0,0,0);
+    glClearColor(0,0,777.0f,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for (int i = 0; i < atlasb.size(); i++) {
-        atlasb[i].color(1).gen_mipmaps();
         findnext_prog.uniform("resid", atlasb[i].color(1));
         compiled_mesh.draw(i*6*64*64, 6*64*64);
     }
     float color[4];
     glReadPixels(0,0,1,1,GL_RGBA,GL_FLOAT, &color);
-
     id = color[0]-1;
-    energy = 1.0/color[1]-1.0f;
+    energy = color[1];
     if (id < 0)
 		return; //  converged!
 
@@ -120,6 +120,9 @@ void iterate() {
         atlas[i].bind();
         compiled_mesh.draw(i*6*64*64, 6*64*64);
     }
+	
+    for (auto &fb : atlasb) { fb.color(0).gen_mipmaps(); fb.color(1).gen_mipmaps(); }
+    for (auto &fb : atlas)  { fb.color(0).gen_mipmaps(); fb.color(1).gen_mipmaps(); }
 }
 
 EM_BOOL update(double time, void *_userdata)
@@ -146,7 +149,9 @@ EM_BOOL update(double time, void *_userdata)
         modelview_prog.uniform("resid", atlas[i].color(0));
         compiled_mesh.draw(i*6*64*64, 6*64*64);
     }
+	
     SDL_GL_SwapWindow(window);
+	glFinish();
     std::swap(atlas, atlasb);
 	return EM_TRUE;
 };
@@ -188,11 +193,13 @@ int main(int argc, char *argv[])
     }
     SDL_GL_MakeCurrent(window, context);
 
+#ifndef __EMSCRIPTEN__
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         std::cerr << "Error: Failed to initialize GLEW." << std::endl;
         return 1;
     }
+#endif
 
 	const char *meshname = (argc > 2)? argv[1] : "asset/sqube.obj";
     if (!load_obj(mesh, meshname)) {
@@ -202,20 +209,20 @@ int main(int argc, char *argv[])
     compiled_mesh = mesh.compile();
 
     modelview_prog = Shader::compile({
-        {ShaderType::Vertex,   "asset/modelview_vert.glsl"},
-        {ShaderType::Fragment, "asset/modelview_frag.glsl"}
+        {ShaderType::Vertex,   "asset/modelview.vert.glsl"},
+        {ShaderType::Fragment, "asset/modelview.frag.glsl"}
     });
     hcube_prog = Shader::compile({
-        {ShaderType::Vertex,   "asset/hcube_vert.glsl"},
-        {ShaderType::Fragment, "asset/hcube_frag.glsl"}
+        {ShaderType::Vertex,   "asset/hcube.vert.glsl"},
+        {ShaderType::Fragment, "asset/hcube.frag.glsl"}
     });
     splat_prog = Shader::compile({
-        {ShaderType::Vertex,   "asset/splat_vert.glsl"},
-        {ShaderType::Fragment, "asset/splat_frag.glsl"}
+        {ShaderType::Vertex,   "asset/splat.vert.glsl"},
+        {ShaderType::Fragment, "asset/splat.frag.glsl"}
     });
     findnext_prog = Shader::compile({
-        {ShaderType::Vertex,   "asset/findnext_vert.glsl"},
-        {ShaderType::Fragment, "asset/findnext_frag.glsl"}
+        {ShaderType::Vertex,   "asset/findnext.vert.glsl"},
+        {ShaderType::Fragment, "asset/findnext.frag.glsl"}
     });
 
     hcube = Framebuffer::create(4096,2048,{ColorFormat::Red},ColorFormat::DepthStencil);
@@ -232,10 +239,10 @@ int main(int argc, char *argv[])
             ColorFormat::RedBlueGreen,ColorFormat::RedBlueGreen},
             ColorFormat::DepthStencil));
     }
-    atlasb.front().color(1).write<float,3>({400000.0f,0,0},512,0);
-    for (auto &fb : atlasb) fb.compile();
-    for (auto &fb : atlas)  fb.compile();
-    
+    atlasb.front().color(1).write<float,4>({400000.0f,0,0,0},512,0);
+    for (auto &fb : atlasb) { fb.compile(); fb.color(0).gen_mipmaps(); fb.color(1).gen_mipmaps(); }
+    for (auto &fb : atlas)  { fb.compile(); fb.color(0).gen_mipmaps(); fb.color(1).gen_mipmaps(); }
+	glFinish();
 
 
 #ifdef __EMSCRIPTEN__

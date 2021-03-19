@@ -22,14 +22,14 @@ public:
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         switch (format) {
         case ColorFormat::Red:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, width, height,
-                0, GL_RED_INTEGER, GL_INT, 0);
-            res.m_format = GL_RED_INTEGER;
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height,
+                0, GL_RED, GL_FLOAT, 0);
+            res.m_format = GL_RED;
             break;
         case ColorFormat::RedBlueGreen:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height,

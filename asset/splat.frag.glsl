@@ -2,18 +2,18 @@
 precision highp float;
 
      in vec3  f_pos;
-flat in int   f_id;
+flat in float f_id;
 flat in vec3  f_norm;
 
 layout(location=0) out vec3 accum;
 layout(location=1) out vec3 resid;
 
 uniform mat4       views[5];
-uniform int        emitter_id;
+uniform float      emitter_id;
 uniform float      energy;
 uniform float      darea;
 uniform mat4       frame;
-uniform highp isampler2D hcube;
+uniform highp sampler2D  hcube;
 uniform highp sampler2D  prev_accum;
 uniform highp sampler2D  prev_resid;
 

@@ -36,7 +36,7 @@ public:
                 sizeof(vertex), (void *)offsetof(vertex, loc));
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
                 sizeof(vertex), (void *)offsetof(vertex, uv));
-            glVertexAttribIPointer(2, 1, GL_INT,
+            glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE,
                 sizeof(vertex), (void *)offsetof(vertex, id));
             glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE,
                 sizeof(vertex), (void *)offsetof(vertex, norm));
@@ -60,7 +60,7 @@ public:
     struct vertex {
         glm::vec3 loc;
         glm::vec2 uv;
-        int id;
+        float id;
         glm::vec3 norm;
         float area;
     };
@@ -70,7 +70,7 @@ public:
     
     unsigned add_face(unsigned a, unsigned b, unsigned c, unsigned d)
     // Convert to triangles implicitly, since OpenGL got rid of quads :(
-        { m_indices.insert(m_indices.end(), {a,b,d, b,c,d}); return m_indices.size()-6; }
+        { m_indices.insert(m_indices.end(), /*{a,b,d, b,c,d}*/{a,b,c, a,c,d}); return m_indices.size()-6; }
 private:
     std::vector<vertex> m_verts;
     std::vector<unsigned> m_indices;
@@ -84,7 +84,7 @@ bool load_obj(QuadMesh &mesh, const char *fname)
 
     std::string linebuf;
     std::vector<glm::vec3> verts;
-    int id = 0;
+    float id = 0;
     while (std::getline(is, linebuf)) {
         std::stringstream ls{linebuf};
         std::string cmd;

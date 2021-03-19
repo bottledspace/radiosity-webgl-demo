@@ -31,16 +31,14 @@ public:
         if (m_depth)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                 GL_TEXTURE_2D, m_channels.back().texid(), 0);
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cerr << "Warn: Framebuffer failed." << std::endl;
-            return;
-        }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void bind(int x, int y, int width, int height) const {
-        glViewport(x, y, width, height);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+        glViewport(x, y, width, height);
     }
     void bind() const { bind(0, 0, m_width, m_height); }
 

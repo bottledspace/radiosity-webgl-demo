@@ -1,9 +1,9 @@
 #version 300 es
 precision highp float;
 
-flat in int f_id;
+flat in float f_id;
 
-layout(location = 0) out int color;
+layout(location = 0) out float color;
 
 void main() {
     color = f_id;

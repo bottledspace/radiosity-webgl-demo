@@ -6,7 +6,7 @@ in vec2 uv;
 out vec3 color;
 
 uniform sampler2D resid;
-uniform int       emitter_id;
+uniform float       emitter_id;
 
 
 void main() {
