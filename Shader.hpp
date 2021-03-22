@@ -34,6 +34,7 @@ private:
         if (loglen > 0) {
             std::vector<char> buffer(loglen+1);
             glGetShaderInfoLog(sh, loglen, NULL, buffer.data());
+			log << "Compiling " << filename << std::endl;
 			log << buffer.data();
         }
         glGetShaderiv(sh, GL_COMPILE_STATUS, &stat);
@@ -61,6 +62,7 @@ public:
         if (loglen > 0) {
             std::vector<char> buffer(loglen+1);
             glGetProgramInfoLog(m_prog, loglen, NULL, buffer.data());
+			log << "Linking " << filename << std::endl;
 			log << buffer.data();
         }
         glGetProgramiv(m_prog, GL_LINK_STATUS, &stat);

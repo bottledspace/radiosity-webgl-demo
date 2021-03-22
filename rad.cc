@@ -31,13 +31,13 @@
 const float M_PI = 3.14159f;
 #endif
 
-const auto proj = glm::perspective(float(M_PI)/2.0f, 1.0f, 0.1f, 500.0f);
+const auto proj = glm::perspective(float(M_PI)/2.0f, 1.0f, 1.0f, 500.0f);
 const std::array<glm::mat4,5> views {
-    proj,                                                         // forward
-    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {+1.0f,0.0f,0.0f}), // up
-    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {-1.0f,0.0f,0.0f}), // down
-    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,-1.0f,0.0f}), // right
-    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,+1.0f,0.0f}), // left
+    proj,                                                               // fwd
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {+1.0f,0.0f,0.0f}),// up
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {-1.0f,0.0f,0.0f}),// down
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,-1.0f,0.0f}),// right
+    proj*glm::rotate(glm::mat4{1}, float(M_PI)/2.0f, {0.0f,+1.0f,0.0f}),// left
 };
 
 class Sol {
@@ -67,10 +67,11 @@ private:
 	Shader findnext_prog;
 	
 	Shader hcube_prog;
-	Framebuffer hcube;
+	std::array<Texture,5> hcube;
+	Framebuffer hcube_fb;
 	
 	float id;
-	float energy;
+	glm::vec3 energy;
 };
 
 bool Sol::init(int argc, char *argv[]) {
@@ -98,18 +99,20 @@ bool Sol::init(int argc, char *argv[]) {
     }
 #endif
 	
-    if (!load_obj(scene, "asset/sqube.obj")) {
+    if (!load_obj(scene, "asset/N.obj")) {
         std::cerr << "Couldn't load scene." << std::endl;
 		return false;
     }
     compiled_scene = scene.compile();
     modelview_prog.create("asset/modelview");
 	
-	hcube.create();
-	hcube.color(0, Texture{4096,2048,Texture::r32f});
-	hcube.depth(Texture{4096,2048,Texture::depth});
-    hcube.complete();
+	hcube_fb.create();
+	hcube_fb.color(0, Texture{1024,1024,Texture::r32f});
+	hcube_fb.depth(Texture{1024,1024,Texture::depth});
+	hcube_fb.complete();
     hcube_prog.create("asset/hcube");
+	for (int i = 0; i < 5; i++)
+		hcube[i].create(1024,1024,Texture::r32f);
 	
 	findnext.create();
 	findnext.color(0, Texture{1,1,Texture::rgba32f});
@@ -131,7 +134,11 @@ bool Sol::init(int argc, char *argv[]) {
 		groups[i].resid.create(16*64,16*64,Texture::rgba32f);
 		groups[i].ofs = i*6*64*64;
     }
-    groups.front().resid.write((void *)std::array<float,4>{400000.0f,0.0f,0.0f,0.0f}.data(),512,0,1,1);
+	for (int i = 0; i < 16; i++)
+	for (int j = 0; j < 16; j++) {
+    	groups.front().resid.write((void *)std::array<float,4>{2000.0f,0.0f,0.0f,0.0f}.data(),512+i,j,1,1);
+    	groups.front().resid.write((void *)std::array<float,4>{0.0f,2000.0f,0.0f,0.0f}.data(),512+64+i,j,1,1);
+	}
 	return true;
 }
 
@@ -146,16 +153,17 @@ void Sol::update() {
     findnext_prog.use();
     findnext.bind();
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0,0,777.0f,0);
+    glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for (const auto &group : groups) {
         findnext_prog.uniform("resid", 0, group.resid);
         compiled_scene.draw(group.ofs, 64*64*6);
     }
-    float color[4];
+	// Read out the result from the framebuffer.
+    float color[4] = {};
     glReadPixels(0,0,1,1,GL_RGBA,GL_FLOAT, &color);
-    id = color[0]-1;
-    energy = color[1];
+    id = color[3]-1;
+   	energy = glm::make_vec3(color);
     if (id < 0)
 		return; //  converged!
 
@@ -175,30 +183,34 @@ void Sol::update() {
 
     hcube_prog.use();
     hcube_prog.uniform("frame", frame);
-    hcube_prog.uniform("views", views);
-    hcube.bind();
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0,0,0,0);
     for (int i = 0; i < 5; i++) {
-        hcube_prog.uniform("side", i);
-        hcube.bind((i%4)*1024,(i/4)*1024,1024,1024);
-        compiled_scene.draw();
+	    hcube_prog.uniform("view", views[i]);	
+        hcube_fb.bind();
+	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		compiled_scene.draw();
+		hcube_fb.color(0).swap(hcube[i]);
+		hcube_fb.complete();
     }
 
     // === Transfer energy ===
 
     splat_prog.use();
     splat_prog.uniform("views", views);
-    splat_prog.uniform("hcube", 0, hcube.color(0));
+    splat_prog.uniform("hcube[0]", 0, hcube[0]);
+	splat_prog.uniform("hcube[1]", 1, hcube[1]);
+	splat_prog.uniform("hcube[2]", 2, hcube[2]);
+	splat_prog.uniform("hcube[3]", 3, hcube[3]);
+	splat_prog.uniform("hcube[4]", 4, hcube[4]);
     splat_prog.uniform("frame", frame);
     splat_prog.uniform("emitter_id", id);
     splat_prog.uniform("energy", energy);
     splat_prog.uniform("darea", darea);
     glDisable(GL_DEPTH_TEST);
     for (auto &group : groups) {
-        splat_prog.uniform("prev_accum", 1, group.accum);
-        splat_prog.uniform("prev_resid", 2, group.resid);
+        splat_prog.uniform("prev_accum", 5, group.accum);
+        splat_prog.uniform("prev_resid", 6, group.resid);
         splat.bind();
         compiled_scene.draw(group.ofs, 64*64*6);
 		splat.color(0).swap(group.accum);
@@ -210,7 +222,7 @@ void Sol::update() {
 void Sol::draw() const {
     static float angle = 0.0f;
     const glm::mat4 mvp =
-        glm::perspective(float(M_PI)/4.0f, 1.0f, 0.1f, 500.0f)
+        glm::perspective(float(M_PI)/4.0f, 1.0f, 1.0f, 500.0f)
       * glm::translate(glm::mat4{1.0f}, {0.0f,0.0f,-15.0f})
       * glm::rotate(glm::mat4{1.0f}, angle += 0.005f, {0.0f,1.0f,0.0f});
 

@@ -10,9 +10,9 @@ layout(location=1) out vec3 resid;
 
 uniform mat4       views[5];
 uniform float      emitter_id;
-uniform float      energy;
+uniform vec3       energy;
 uniform float      darea;
-uniform highp sampler2D  hcube;
+uniform highp sampler2D  hcube[5];
 uniform highp sampler2D  prev_accum;
 uniform highp sampler2D  prev_resid;
 
@@ -50,16 +50,21 @@ void main() {
     
     // Project patch location onto hemicube
     vec4 projected = views[side] * vec4(f_pos,1);
-    vec2 uv = clamp(projected.xy / projected.w, -1.0, 1.0);
-    uv = (uv + vec2(1 + 2*(side%4),1 + 2*(side/4))) * 512.0;
-    if (texture(hcube, (uv)/vec2(4,2)/1024.0).r != f_id)
+    vec2 uv = (clamp(projected.xy / projected.w, -1.0, 1.0) + 1.0) / 2.0;
+	// We need to go through each side like this because dereferencing the
+	// sampler is only allowed with a constant.
+    if ((side == 0 && abs(texture(hcube[0], uv).r - f_id) >= 0.1)
+	 || (side == 1 && abs(texture(hcube[1], uv).r - f_id) >= 0.1)
+	 || (side == 2 && abs(texture(hcube[2], uv).r - f_id) >= 0.1)
+	 || (side == 3 && abs(texture(hcube[3], uv).r - f_id) >= 0.1)
+	 || (side == 4 && abs(texture(hcube[4], uv).r - f_id) >= 0.1))
       return;  // Not visible to emitter
 
     // Patch location is relative to emitter
     vec3 r = normalize(f_pos);
-    float Fij = max(dot(f_norm, r) * -dot(vec3(0,0,-1), r), 0.0)
+    float Fij = max(dot(f_norm, r) * dot(vec3(0,0,1), r), 0.0)
       / (3.14159 * dot(f_pos, f_pos));
 
-    accum += 0.5*energy*darea*vec3(Fij,0,0);
-    resid += 0.5*energy*darea*vec3(Fij,0,0);
+    accum += 0.5*energy*darea*Fij;
+    resid += 0.5*energy*darea*Fij;
 }

@@ -9,11 +9,10 @@ layout(location = 4) in float area_in;
 
 flat out float f_id;
 
-uniform int side;
-uniform mat4 views[5];
+uniform mat4 view;
 uniform mat4 frame;
 
 void main() {
-    gl_Position = views[side] * frame * loc_in;
+    gl_Position = view * frame * loc_in;
     f_id = id_in;
 }

@@ -16,7 +16,6 @@ public:
 	        glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
             glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void *)ofs);
-			glDrawArrays(GL_POINTS, 0, 40);
         }
         void draw() const { draw(0, count); }
     };
