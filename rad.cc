@@ -31,23 +31,6 @@
 const float M_PI = 3.14159f;
 #endif
 
-// This is a 'fix' for Apple's broken ios implementation of OpenGL
-template <size_t N>
-void packmat(const Shader &sh, const std::string &unifname,
-             const std::array<glm::mat4,N> &m) {
-	for (int i = 0; i < N; i++) {
-	const float *iden = glm::value_ptr(m[i]);
-	glUniform4f(glGetUniformLocation(sh.m_prog, (unifname + "["+std::to_string(4*i+0)+"]").c_str()),
-		iden[0], iden[1], iden[2], iden[3]);
-	glUniform4f(glGetUniformLocation(sh.m_prog, (unifname + "["+std::to_string(4*i+1)+"]").c_str()),
-		iden[4], iden[5], iden[6], iden[7]);
-	glUniform4f(glGetUniformLocation(sh.m_prog, (unifname + "["+std::to_string(4*i+2)+"]").c_str()),
-		iden[8], iden[9], iden[10], iden[11]);
-	glUniform4f(glGetUniformLocation(sh.m_prog, (unifname + "["+std::to_string(4*i+3)+"]").c_str()),
-		iden[12], iden[13], iden[14], iden[15]);
-	}
-}
-
 const auto proj = glm::perspective(float(M_PI)/2.0f, 1.0f, 0.1f, 500.0f);
 const std::array<glm::mat4,5> views {
     proj,                                                         // forward
@@ -191,10 +174,8 @@ void Sol::update() {
     // === Draw hemicube ===
 
     hcube_prog.use();
-    //hcube_prog.uniform("frame", frame);
-	packmat<1>(hcube_prog, "frame", {frame});
-    //hcube_prog.uniform("views", views);
-	packmat<5>(hcube_prog, "views", views);
+    hcube_prog.uniform("frame", frame);
+    hcube_prog.uniform("views", views);
     hcube.bind();
     glEnable(GL_DEPTH_TEST);
     glClearColor(0,0,0,0);
@@ -208,11 +189,9 @@ void Sol::update() {
     // === Transfer energy ===
 
     splat_prog.use();
-    //splat_prog.uniform("views", views);
-	packmat<5>(splat_prog, "views", views);
+    splat_prog.uniform("views", views);
     splat_prog.uniform("hcube", 0, hcube.color(0));
-    //splat_prog.uniform("frame", frame);
-	packmat<1>(splat_prog, "frame", {frame});
+    splat_prog.uniform("frame", frame);
     splat_prog.uniform("emitter_id", id);
     splat_prog.uniform("energy", energy);
     splat_prog.uniform("darea", darea);
@@ -243,7 +222,7 @@ void Sol::draw() const {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     modelview_prog.use();
-	packmat<1>(modelview_prog, "mvp", {mvp});
+	modelview_prog.uniform("mvp", mvp);
     for (const auto &group : groups) {
         modelview_prog.uniform("resid", 0, group.accum);
         compiled_scene.draw(group.ofs, 64*64*6);

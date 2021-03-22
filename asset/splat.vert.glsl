@@ -11,12 +11,12 @@ flat out float f_id;
      out vec3 f_pos;
 flat out vec3 f_norm;
 
-uniform vec4 frame[4];
+uniform mat4 frame;
 
 void main() {
     f_id = (id_in);
-    f_pos = vec3(mat4(frame[0],frame[1],frame[2],frame[3]) * pos_in);
-    f_norm = mat3(mat4(frame[0],frame[1],frame[2],frame[3])) * vec3(norm_in);
+    f_pos = vec3(frame * pos_in);
+    f_norm = mat3(frame) * vec3(norm_in);
     int k = int(id_in)%(64*64);
     vec2 uv = 16.0 * (uv_in + vec2(k%64, k/64)) / 1024.0;
     gl_Position = vec4(uv * 2.0 - 1.0, 0, 1);

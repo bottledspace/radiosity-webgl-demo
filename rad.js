@@ -187,7 +187,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
     }
   
    }
-   loadPackage({"files": [{"filename": "/asset/.DS_Store", "start": 0, "end": 6148, "audio": 0}, {"filename": "/asset/cuboid.obj", "start": 6148, "end": 13116, "audio": 0}, {"filename": "/asset/findnext.frag.glsl", "start": 13116, "end": 13393, "audio": 0}, {"filename": "/asset/sqube.obj", "start": 13393, "end": 101294, "audio": 0}, {"filename": "/asset/hcube.vert.glsl", "start": 101294, "end": 101789, "audio": 0}, {"filename": "/asset/modelview.vert.glsl", "start": 101789, "end": 102142, "audio": 0}, {"filename": "/asset/sphere.obj", "start": 102142, "end": 120444, "audio": 0}, {"filename": "/asset/splat.vert.glsl", "start": 120444, "end": 121080, "audio": 0}, {"filename": "/asset/cube.obj", "start": 121080, "end": 121439, "audio": 0}, {"filename": "/asset/hcube.frag.glsl", "start": 121439, "end": 121572, "audio": 0}, {"filename": "/asset/modelview.frag.glsl", "start": 121572, "end": 121797, "audio": 0}, {"filename": "/asset/splat.frag.glsl", "start": 121797, "end": 123605, "audio": 0}, {"filename": "/asset/findnext.vert.glsl", "start": 123605, "end": 124387, "audio": 0}, {"filename": "/asset/hive.obj", "start": 124387, "end": 229432, "audio": 0}], "remote_package_size": 229432, "package_uuid": "d15b3bd0-3824-4bb4-99f3-162a6af4a8fd"});
+   loadPackage({"files": [{"filename": "/asset/.DS_Store", "start": 0, "end": 6148, "audio": 0}, {"filename": "/asset/cuboid.obj", "start": 6148, "end": 13116, "audio": 0}, {"filename": "/asset/findnext.frag.glsl", "start": 13116, "end": 13393, "audio": 0}, {"filename": "/asset/sqube.obj", "start": 13393, "end": 101294, "audio": 0}, {"filename": "/asset/hcube.vert.glsl", "start": 101294, "end": 101687, "audio": 0}, {"filename": "/asset/modelview.vert.glsl", "start": 101687, "end": 102007, "audio": 0}, {"filename": "/asset/sphere.obj", "start": 102007, "end": 120309, "audio": 0}, {"filename": "/asset/splat.vert.glsl", "start": 120309, "end": 120870, "audio": 0}, {"filename": "/asset/cube.obj", "start": 120870, "end": 121229, "audio": 0}, {"filename": "/asset/hcube.frag.glsl", "start": 121229, "end": 121362, "audio": 0}, {"filename": "/asset/modelview.frag.glsl", "start": 121362, "end": 121587, "audio": 0}, {"filename": "/asset/splat.frag.glsl", "start": 121587, "end": 123315, "audio": 0}, {"filename": "/asset/findnext.vert.glsl", "start": 123315, "end": 124097, "audio": 0}, {"filename": "/asset/hive.obj", "start": 124097, "end": 229142, "audio": 0}], "remote_package_size": 229142, "package_uuid": "7607bc11-ca49-4f6b-915e-eda5c16ce2b7"});
   
   })();
   
@@ -9854,8 +9854,43 @@ var ASM_CONSTS = {
       GLctx.uniform1i(GL.uniforms[location], v0);
     }
 
-  function _glUniform4f(location, v0, v1, v2, v3) {
-      GLctx.uniform4f(GL.uniforms[location], v0, v1, v2, v3);
+  function _glUniformMatrix4fv(location, count, transpose, value) {
+  
+      if (GL.currentContext.version >= 2) { // WebGL 2 provides new garbage-free entry points to call to WebGL. Use those always when possible.
+        GLctx.uniformMatrix4fv(GL.uniforms[location], !!transpose, HEAPF32, value>>2, count*16);
+        return;
+      }
+  
+      if (count <= 18) {
+        // avoid allocation when uploading few enough uniforms
+        var view = miniTempWebGLFloatBuffers[16*count-1];
+        // hoist the heap out of the loop for size and for pthreads+growth.
+        var heap = HEAPF32;
+        value >>= 2;
+        for (var i = 0; i < 16 * count; i += 16) {
+          var dst = value + i;
+          view[i] = heap[dst];
+          view[i + 1] = heap[dst + 1];
+          view[i + 2] = heap[dst + 2];
+          view[i + 3] = heap[dst + 3];
+          view[i + 4] = heap[dst + 4];
+          view[i + 5] = heap[dst + 5];
+          view[i + 6] = heap[dst + 6];
+          view[i + 7] = heap[dst + 7];
+          view[i + 8] = heap[dst + 8];
+          view[i + 9] = heap[dst + 9];
+          view[i + 10] = heap[dst + 10];
+          view[i + 11] = heap[dst + 11];
+          view[i + 12] = heap[dst + 12];
+          view[i + 13] = heap[dst + 13];
+          view[i + 14] = heap[dst + 14];
+          view[i + 15] = heap[dst + 15];
+        }
+      } else
+      {
+        var view = HEAPF32.subarray((value)>>2, (value+count*64)>>2);
+      }
+      GLctx.uniformMatrix4fv(GL.uniforms[location], !!transpose, view);
     }
 
   function _glUseProgram(program) {
@@ -10754,7 +10789,7 @@ var asmLibraryArg = {
   "glTexSubImage2D": _glTexSubImage2D,
   "glUniform1f": _glUniform1f,
   "glUniform1i": _glUniform1i,
-  "glUniform4f": _glUniform4f,
+  "glUniformMatrix4fv": _glUniformMatrix4fv,
   "glUseProgram": _glUseProgram,
   "glVertexAttribPointer": _glVertexAttribPointer,
   "glViewport": _glViewport,

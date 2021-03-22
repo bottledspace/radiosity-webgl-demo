@@ -8,7 +8,7 @@ flat in vec3  f_norm;
 layout(location=0) out vec3 accum;
 layout(location=1) out vec3 resid;
 
-uniform vec4       views[20];
+uniform mat4       views[5];
 uniform float      emitter_id;
 uniform float      energy;
 uniform float      darea;
@@ -49,8 +49,7 @@ void main() {
       return;   // No energy transferred behind emitter
     
     // Project patch location onto hemicube
-    vec4 projected = mat4(views[4*side],views[4*side+1],
-	                      views[4*side+2],views[4*side+3])* vec4(f_pos,1);
+    vec4 projected = views[side] * vec4(f_pos,1);
     vec2 uv = clamp(projected.xy / projected.w, -1.0, 1.0);
     uv = (uv + vec2(1 + 2*(side%4),1 + 2*(side/4))) * 512.0;
     if (texture(hcube, (uv)/vec2(4,2)/1024.0).r != f_id)
