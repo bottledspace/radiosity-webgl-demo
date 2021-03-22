@@ -10,6 +10,7 @@ layout(location = 4) in float area_in;
 
 flat out float f_id;
 flat out float f_energy;
+flat out float f_notused;
 
 uniform sampler2D resid;
 
@@ -26,4 +27,5 @@ void main() {
     gl_Position = vec4(uv_in * 2.0 - 1.0, depth, 1.0);
     f_id = float(int(id_in)+1);
 	f_energy = energy;
+	f_notused = pos_in.x;
 }

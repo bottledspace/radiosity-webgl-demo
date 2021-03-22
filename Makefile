@@ -11,4 +11,4 @@ INCLUDE_DIRS := \
 	-I/usr/local/Cellar/emscripten/2.0.14/libexec/system 
 LIB_DIRS := 
 html5 : rad.cc shell.html
-	em++ -o rad.html --std=c++17 -s USE_SDL=2 -s USE_WEBGL2=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 $(INCLUDE_DIRS) rad.cc $(LIB_DIRS) --shell-file shell.html --preload-file asset
+	em++ -o rad.html -g4 --source-map-base --std=c++17 -s USE_SDL=2 -s USE_WEBGL2=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 $(INCLUDE_DIRS) rad.cc $(LIB_DIRS) --shell-file shell.html --preload-file asset

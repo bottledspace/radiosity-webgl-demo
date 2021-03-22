@@ -10,10 +10,12 @@ layout(location = 4) in float area_in;
 flat out float f_id;
 
 uniform int side;
-uniform mat4 views[5];
-uniform mat4 frame;
+uniform vec4 views[20];
+uniform vec4 frame[4];
 
 void main() {
-    gl_Position = views[side] * frame * loc_in;
+    gl_Position = mat4(views[4*side],views[4*side+1],
+		views[4*side+2],views[4*side+3]) * mat4(frame[0],frame[1],
+		frame[2],frame[3]) * loc_in;
     f_id = id_in;
 }

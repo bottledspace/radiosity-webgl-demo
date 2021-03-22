@@ -13,13 +13,10 @@ public:
             if (ofs+count > this->count)
                 count = this->count-ofs;
             glBindVertexArray(vao);
+	        glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-            glEnableVertexAttribArray(0);
-            glEnableVertexAttribArray(1);
-            glEnableVertexAttribArray(2);
-            glEnableVertexAttribArray(3);
-            glEnableVertexAttribArray(4);
             glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void *)ofs);
+			glDrawArrays(GL_POINTS, 0, 40);
         }
         void draw() const { draw(0, count); }
     };
@@ -31,6 +28,11 @@ public:
             
             glGenVertexArrays(1, &next.vao);
             glBindVertexArray(next.vao);
+            glEnableVertexAttribArray(0);
+            glEnableVertexAttribArray(1);
+            glEnableVertexAttribArray(2);
+            glEnableVertexAttribArray(3);
+            glEnableVertexAttribArray(4);
             glBindBuffer(GL_ARRAY_BUFFER, next.vbo);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                 sizeof(vertex), (void *)offsetof(vertex, loc));
@@ -53,7 +55,6 @@ public:
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
             m_indices.size()*sizeof(unsigned),
             m_indices.data(), GL_STATIC_DRAW);
-        glBindVertexArray(0);
         return next;
     }
 
@@ -70,7 +71,7 @@ public:
     
     unsigned add_face(unsigned a, unsigned b, unsigned c, unsigned d)
     // Convert to triangles implicitly, since OpenGL got rid of quads :(
-        { m_indices.insert(m_indices.end(), /*{a,b,d, b,c,d}*/{a,b,c, a,c,d}); return m_indices.size()-6; }
+        { m_indices.insert(m_indices.end(), {a,b,d, b,c,d}/*/{a,b,c, a,c,d}*/); return m_indices.size()-6; }
 private:
     std::vector<vertex> m_verts;
     std::vector<unsigned> m_indices;
@@ -109,6 +110,7 @@ bool load_obj(QuadMesh &mesh, const char *fname)
             auto b2 = mesh.add_vert({verts[b-1], glm::vec2{1.0f, 0.0f}, id, norm, area});
             auto c2 = mesh.add_vert({verts[c-1], glm::vec2{1.0f, 1.0f}, id, norm, area});
             auto d2 = mesh.add_vert({verts[d-1], glm::vec2{0.0f, 1.0f}, id, norm, area});
+			
             mesh.add_face(a2, b2, c2, d2);
             id++;
         }

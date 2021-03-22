@@ -1,55 +1,53 @@
+#pragma once
 
 class Framebuffer {
 public:
-    static Framebuffer create(int width, int height, std::initializer_list<ColorFormat> &&formats, ColorFormat depth = ColorFormat::None) {
-		Framebuffer res;
-		res.m_width = width;
-		res.m_height = height;
-		res.m_depth = false;
-        glGenFramebuffers(1, &res.m_fbo);
-        for (auto format : formats)
-            res.m_channels.push_back(Texture::create(width, height, format));
-        if (depth != ColorFormat::None) {
-            res.m_depth = true;
-            res.m_channels.push_back(Texture::create(width, height, depth));
-        }
-		return res;
-    }
-
-    void compile() {
+	void create() {
+		glGenFramebuffers(1, &m_fbo);
+	}
+    bool complete() {
         const GLenum attachments[] = {
             GL_COLOR_ATTACHMENT0,
             GL_COLOR_ATTACHMENT1,
             GL_COLOR_ATTACHMENT2
         };
-
-        bind();
-        for (int i = 0; i < (m_depth? (m_channels.size()-1) : m_channels.size()); i++)
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+        for (int i = 0; i < m_colors.size(); i++)
             glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i],
-                GL_TEXTURE_2D, m_channels[i].texid(), 0);
-        glDrawBuffers(m_channels.size(), attachments);
-        if (m_depth)
+                GL_TEXTURE_2D, m_colors[i].texid(), 0);
+        glDrawBuffers(m_colors.size(), attachments);
+        if (m_depth.valid()) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                GL_TEXTURE_2D, m_channels.back().texid(), 0);
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cerr << "Warn: Framebuffer failed." << std::endl;
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                GL_TEXTURE_2D, m_depth.texid(), 0);
+		}
+        return (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
 
     void bind(int x, int y, int width, int height) const {
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
         glViewport(x, y, width, height);
     }
-    void bind() const { bind(0, 0, m_width, m_height); }
+    void bind() const
+		{ bind(0, 0, m_colors.front().width(), m_colors.front().height()); }
 
+	Texture &color(int n, Texture &&temp) {
+		if (n >= m_colors.size())
+			m_colors.resize(n+1);
+		return m_colors[n] = std::move(temp);
+	}
     Texture &color(int n = 0)
-        { return m_channels[n]; }
+    	{ return m_colors[n]; }
+    const Texture &color(int n = 0) const
+        { return m_colors[n]; }
+	Texture &depth(Texture &&temp) {
+		return m_depth = std::move(temp);
+	}
     Texture &depth()
-        { return m_channels.back(); }
-
+        { return m_depth; }
+    const Texture &depth() const
+		{ return m_depth; }
 private:
-    int m_width, m_height;
-    bool m_depth;
     GLuint m_fbo;
-    std::vector<Texture> m_channels;
+    std::vector<Texture> m_colors;
+    Texture m_depth;
 };
