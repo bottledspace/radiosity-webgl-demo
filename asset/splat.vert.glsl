@@ -19,5 +19,5 @@ void main() {
     f_norm = mat3(frame) * vec3(norm_in);
     int k = int(id_in)%(64*64);
     vec2 uv = 16.0 * (uv_in + vec2(k%64, k/64)) / 1024.0;
-    gl_Position = vec4(uv * 2.0 - 1.0, 0, 1);
+    gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
 }

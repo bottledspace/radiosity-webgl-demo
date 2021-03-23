@@ -30,17 +30,17 @@ public:
     void bind() const
 		{ bind(0, 0, m_colors.front().width(), m_colors.front().height()); }
 
-	Texture &color(int n, Texture &&temp) {
+	Texture &color(int n, const Texture &temp) {
 		if (n >= m_colors.size())
 			m_colors.resize(n+1);
-		return m_colors[n] = std::move(temp);
+		return m_colors[n] = temp;
 	}
     Texture &color(int n = 0)
     	{ return m_colors[n]; }
     const Texture &color(int n = 0) const
         { return m_colors[n]; }
-	Texture &depth(Texture &&temp) {
-		return m_depth = std::move(temp);
+	Texture &depth(const Texture &temp) {
+		return m_depth = temp;
 	}
     Texture &depth()
         { return m_depth; }

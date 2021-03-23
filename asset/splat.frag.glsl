@@ -35,6 +35,15 @@ int which_side(vec3 p) {
   else return -1;
 }
 
+bool visible(sampler2D s, vec2 uv) {
+	const float pixel = 0.5/1024.0;
+	if (abs(texture(s, uv-pixel*vec2(1.0,-1.0)).r - f_id) < 0.1) return true;
+	if (abs(texture(s, uv-pixel*vec2(1.0,1.0)).r - f_id) < 0.1) return true;
+	if (abs(texture(s, uv-pixel*vec2(-1.0,-1.0)).r - f_id) < 0.1) return true;
+	if (abs(texture(s, uv-pixel*vec2(-1.0,1.0)).r - f_id) < 0.1) return true;
+	return false;
+}
+
 void main() {
     accum = texelFetch(prev_accum, ivec2(gl_FragCoord.xy), 0).rgb;
     resid = texelFetch(prev_resid, ivec2(gl_FragCoord.xy), 0).rgb;
@@ -53,11 +62,11 @@ void main() {
     vec2 uv = (clamp(projected.xy / projected.w, -1.0, 1.0) + 1.0) / 2.0;
 	// We need to go through each side like this because dereferencing the
 	// sampler is only allowed with a constant.
-    if ((side == 0 && abs(texture(hcube[0], uv).r - f_id) >= 0.1)
-	 || (side == 1 && abs(texture(hcube[1], uv).r - f_id) >= 0.1)
-	 || (side == 2 && abs(texture(hcube[2], uv).r - f_id) >= 0.1)
-	 || (side == 3 && abs(texture(hcube[3], uv).r - f_id) >= 0.1)
-	 || (side == 4 && abs(texture(hcube[4], uv).r - f_id) >= 0.1))
+    if ((side == 0 && !visible(hcube[0], uv))
+	 || (side == 1 && !visible(hcube[1], uv))
+	 || (side == 2 && !visible(hcube[2], uv))
+	 || (side == 3 && !visible(hcube[3], uv))
+	 || (side == 4 && !visible(hcube[4], uv)))
       return;  // Not visible to emitter
 
     // Patch location is relative to emitter

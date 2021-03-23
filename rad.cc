@@ -107,37 +107,39 @@ bool Sol::init(int argc, char *argv[]) {
     modelview_prog.create("asset/modelview");
 	
 	hcube_fb.create();
-	hcube_fb.color(0, Texture{1024,1024,Texture::r32f});
-	hcube_fb.depth(Texture{1024,1024,Texture::depth});
+	hcube_fb.color(0, Texture{1024,1024}.r32f().nearest().clamp());
+	hcube_fb.depth(Texture{1024,1024}.depth32f());
 	hcube_fb.complete();
     hcube_prog.create("asset/hcube");
 	for (int i = 0; i < 5; i++)
-		hcube[i].create(1024,1024,Texture::r32f);
+		hcube[i].create(1024,1024).r32f().nearest().clamp();
 	
 	findnext.create();
-	findnext.color(0, Texture{1,1,Texture::rgba32f});
-	findnext.depth(Texture{1,1,Texture::depth});
+	findnext.color(0, Texture{1,1}.rgba32f().nearest().clamp());
+	findnext.depth(Texture{1,1}.depth32f());
     findnext.complete();
     findnext_prog.create("asset/findnext");
 	
 	splat.create();
-	splat.color(0, {16*64,16*64,Texture::rgba32f});
-	splat.color(1, {16*64,16*64,Texture::rgba32f});
-	splat.depth({16*64,16*64,Texture::depth});
+	splat.color(0, Texture{16*64,16*64}.rgba32f().nearest().clamp());
+	splat.color(1, Texture{16*64,16*64}.rgba32f().nearest().clamp());
+	splat.depth(Texture{16*64,16*64}.depth32f());
 	splat.complete();
     splat_prog.create("asset/splat");
     
     groups.resize((compiled_scene.count+6*64*64-1)/(6*64*64));
     for (int i = 0; i < groups.size(); i++) {
 		std::cout << "creating group " << i << std::endl;
-        groups[i].accum.create(16*64,16*64,Texture::rgba32f);
-		groups[i].resid.create(16*64,16*64,Texture::rgba32f);
+        groups[i].accum.create(16*64,16*64).rgba32f().nearest().clamp();
+		groups[i].resid.create(16*64,16*64).rgba32f().nearest().clamp();
 		groups[i].ofs = i*6*64*64;
     }
+	const auto red = std::array<float,4>{2000.0f,0.0f,0.0f,0.0f};
+	const auto green = std::array<float,4>{0.0f,2000.0f,0.0f,0.0f};
 	for (int i = 0; i < 16; i++)
 	for (int j = 0; j < 16; j++) {
-    	groups.front().resid.write((void *)std::array<float,4>{2000.0f,0.0f,0.0f,0.0f}.data(),512+i,j,1,1);
-    	groups.front().resid.write((void *)std::array<float,4>{0.0f,2000.0f,0.0f,0.0f}.data(),512+64+i,j,1,1);
+    	groups.front().resid.write_rgba32f(red.data(),512+i,j,1,1);
+    	groups.front().resid.write_rgba32f(green.data(),512+64+i,j,1,1);
 	}
 	return true;
 }
@@ -183,6 +185,7 @@ void Sol::update() {
 
     hcube_prog.use();
     hcube_prog.uniform("frame", frame);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0,0,0,0);
     for (int i = 0; i < 5; i++) {
@@ -208,6 +211,7 @@ void Sol::update() {
     splat_prog.uniform("energy", energy);
     splat_prog.uniform("darea", darea);
     glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
     for (auto &group : groups) {
         splat_prog.uniform("prev_accum", 5, group.accum);
         splat_prog.uniform("prev_resid", 6, group.resid);
@@ -285,7 +289,7 @@ int main(int argc, char *argv[])
 #endif
 	SDL_GL_SetSwapInterval(1);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
 
 	if (!app.init(argc, argv)) {
 		std::cerr << "Fatal error encountered. Exiting." << std::endl;
