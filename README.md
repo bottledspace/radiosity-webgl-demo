@@ -1,5 +1,6 @@
-
-![Screen Shot 2021-06-17 at 11 15 33](https://user-images.githubusercontent.com/46606990/122246624-b4478600-ce94-11eb-8698-ef5474804c61.png)
+<p align="center">
+<img src="https://user-images.githubusercontent.com/46606990/122246624-b4478600-ce94-11eb-8698-ef5474804c61.png"></img>
+</p>
 
 # sol
 
