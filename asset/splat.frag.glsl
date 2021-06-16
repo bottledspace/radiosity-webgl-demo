@@ -35,6 +35,7 @@ int which_side(vec3 p) {
   else return -1;
 }
 
+// Manually multisample to test for visibility using our hemicube
 bool visible(sampler2D s, vec2 uv) {
 	const float pixel = 0.5/1024.0;
 	if (abs(texture(s, uv-pixel*vec2(1.0,-1.0)).r - f_id) < 0.1) return true;

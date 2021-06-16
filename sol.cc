@@ -45,6 +45,7 @@ public:
 	bool init(int argc, char *argv[]);
 	void update();
 	void draw() const;
+	void clear();
 
 private:	
 	struct matgroup {
@@ -52,9 +53,7 @@ private:
 		int ofs;
 	};
 	std::vector<matgroup> groups;
-	
-	void load();
-	
+		
 	QuadMesh scene;
 	QuadMesh::compiled compiled_scene;
 	SDL_Window *window;
@@ -142,6 +141,24 @@ bool Sol::init(int argc, char *argv[]) {
     	groups.front().resid.write_rgba32f(green.data(),512+64+i,j,1,1);
 	}
 	return true;
+}
+
+void Sol::clear() {
+	for (auto &group : groups) {
+        splat.bind();
+		glClearBufferfv(GL_COLOR, 0, std::array<float,4>{0,0,0,0}.data());
+		glClearBufferfv(GL_COLOR, 1, std::array<float,4>{0,0,0,0}.data());
+		splat.color(0).swap(group.accum);
+		splat.color(1).swap(group.resid);
+		splat.complete();
+	}
+	const auto red = std::array<float,4>{2000.0f,0.0f,0.0f,0.0f};
+	const auto green = std::array<float,4>{0.0f,2000.0f,0.0f,0.0f};
+	for (int i = 0; i < 16; i++)
+	for (int j = 0; j < 16; j++) {
+    	groups.front().resid.write_rgba32f(red.data(),512+i,j,1,1);
+    	groups.front().resid.write_rgba32f(green.data(),512+64+i,j,1,1);
+	}
 }
 
 void Sol::update() {
@@ -232,7 +249,7 @@ void Sol::draw() const {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0,0,512,512);
-    glClearColor(.75,0.75,.75,1);
+    glClearColor(238.0/255.0,238.0/255.0,238.0/255.0,1);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -251,7 +268,6 @@ void Sol::draw() const {
 EM_BOOL update(double time, void *userdata)
 {
 	Sol *app = (Sol *)userdata;
-	app->update();
 	app->draw();
 
     SDL_Event ev;
@@ -295,6 +311,8 @@ int main(int argc, char *argv[])
 		std::cerr << "Fatal error encountered. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+	for (int i = 0; i < 10; i++)
+		app.update();
 
 #ifdef __EMSCRIPTEN__
 	emscripten_request_animation_frame_loop(update, &app);
