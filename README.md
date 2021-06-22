@@ -1,8 +1,8 @@
+# Radiosity Demonstration
+
 <p align="center">
 <img src="https://user-images.githubusercontent.com/46606990/122246624-b4478600-ce94-11eb-8698-ef5474804c61.png"></img>
 </p>
-
-# sol
 
 A simulation of global illumination using Radiosity. The light in this scene has been
 calculated in real time almost entirely on the GPU through several shader passes, mostly
