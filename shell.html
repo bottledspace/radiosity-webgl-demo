@@ -5,16 +5,16 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Emscripten-Generated Code</title>
     <style>
+      .centering { width: 512px; margin: 0 auto; }
       .emscripten { padding-right: 0; display: block; }
       div.emscripten { text-align: center; }
       canvas.emscripten { border: 0px none; background-color: black; }
     </style>
   </head>
   <body>
-    <div>
+    <div class="centering">
 		<div id="status">Downloading...</div>
    	 	<progress value="0" max="100" id="progress" hidden=1></progress>
-    </div>
 	<canvas id="canvas" width="512" height="512"
 		oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
     <script>
@@ -72,5 +72,6 @@
       };
     </script>
     {{{ SCRIPT }}}
+    </div>
   </body>
 </html>
