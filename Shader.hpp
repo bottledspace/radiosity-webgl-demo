@@ -22,6 +22,7 @@ private:
 			buffer.push_back((char)c);
 		}
 		buffer.push_back(0);
+        std::cout << buffer.data() << std::endl;
         
         // Compile shader
         const char *p = buffer.data();
