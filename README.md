@@ -5,10 +5,10 @@
 
 # Radiosity WebGL Demonstration
 
-A simulation of global illumination using Radiosity. The light in this scene has been
+Go to [the following link](https://astronotter.github.io/radiosity-webgl-demo/sol.html) to run the demo live in your browser. The demo requires WebGL2 to run which most browsers should support (Safari on ios is one notable exception).
+
+This is a simulation of global illumination using the technique known as Radiosity. The light in this scene has been
 calculated in real time almost entirely on the GPU through several shader passes, mostly
 following the method presented in [Chapter 39](https://developer.nvidia.com/gpugems/gpugems2/part-v-image-oriented-computing/chapter-39-global-illumination-using-progressive)
 of GPU Gems.
-
-The demo is written in modern C++ using SDL and OpenGL and can be compiled as a desktop application (Windows, OSX, Linux, etc)
-or cross-compiled to WebGL2, using emscripten. Please note that not all browsers currently support WebGL2 (looking at you Apple!)
+The demo is written in modern C++ using SDL and OpenGL, cross-compiled to WebASM using emscripten.
